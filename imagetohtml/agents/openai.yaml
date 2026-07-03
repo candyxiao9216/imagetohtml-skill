@@ -1,0 +1,4 @@
+interface:
+  display_name: "Image to HTML"
+  short_description: "Extract visual assets and build static HTML"
+  default_prompt: "Use $imagetohtml to turn this visual mockup image into a structured static HTML page with reusable assets."
