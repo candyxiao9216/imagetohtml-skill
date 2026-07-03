@@ -14,12 +14,13 @@ description: Use when Codex needs to convert a single visual mockup image (PNG/J
 - 原图是母图。除非用户明确要求，不重新生成、重画或改写 logo、插画、人物、构图、表情、动作、风格。
 - v1 只处理单张视觉稿图片；多页、多状态、多端完整设计系统不在默认范围内。
 - 文字必须转成 HTML 真文字。OCR 只是初稿，必须人工/模型对照母图校对。
-- logo 不自动重绘 SVG。v1 默认裁切占位，并标记是否需要后续人工重绘。
+- Logo 先判断复杂度：简单、清晰、低风险的标识可以手写 SVG；复杂、模糊或品牌识别不确定的标识先裁切占位，并标记是否需要后续人工重绘。
 - 图标优先 SVG 化；常见图标优先使用项目已有图标库或 lucide。
 - 图片、复杂插画、复杂纹理用 PNG/WebP 资产；按钮、卡片、边框、圆角、阴影、纯色和简单渐变用 CSS。
+- 复杂插画、产品图和角色资产裁切必须保留主体、阴影、装饰元素和安全留白；贴边、缺角或被容器裁掉时，不得标记为 `confirmed`。
 - 页面结构使用语义化 HTML，不用全局绝对定位拼截图。
 - 响应式以原图设备为优先：桌面图桌面优先，手机图手机优先；另一端只保证不溢出、不重叠、顺序合理、视觉风格延续。
-- QA 必须生成截图和人工对比报告；不要把像素 diff 作为 v1 硬验收。
+- QA 必须生成截图和人工对比报告，并检查裁切遮挡、颜色漂移和源视口关键几何；不要把像素 diff 作为 v1 硬验收。
 
 ## 输出结构
 
@@ -54,16 +55,16 @@ imagetohtml-output/
 
 1. 复制母图到 `source/original.png`。
 2. 运行 `scripts/inspect_image.py` 获取尺寸、比例、设备推断和基础元信息。
-3. 写 `visual-breakdown.md`，逐区判断每个视觉元素应该裁图、SVG 化、CSS 复刻还是转成真文字。
+3. 写 `visual-breakdown.md`，逐区判断每个视觉元素应该裁图、SVG 化、CSS 复刻还是转成真文字，并记录源视口关键几何。
 4. 做 OCR 初提取，写 `text-map.json`；对照母图校对，不确定内容标 `needs-review`。
 5. 匹配相似开源字体，写 `font-map.json`；必须记录来源、许可证和用途。
 6. 运行 `scripts/sample_colors.py` 生成颜色证据层；完整颜色统计只作为证据，不等于全部进入 CSS token。
-7. 按混合裁切规则运行 `scripts/crop_asset.py` 提取图片、插画、logo 占位等资产。
+7. 按混合裁切规则运行 `scripts/crop_asset.py` 提取图片、插画、Logo 占位等资产；复杂插画优先加安全留白。
 8. 写 `asset-manifest.json`，记录每个资产的来源区域、用途、处理方式和待确认项。
-9. 写 `tokens/tokens.css`，包含字体、颜色、字号、间距、圆角、阴影等实际页面会用到的 token。
-10. 写 `index.html` 和必要 CSS。使用 `header/main/section/footer`、`h1/h2/p/a/button` 等语义化结构。
+9. 写 `tokens/tokens.css`，包含字体、颜色、字号、间距、圆角、阴影等实际页面会用到的 token；关键颜色必须能追溯到 `colors/color-map.json`。
+10. 写 `index.html` 和必要 CSS。先按源视口几何锁定外框、网格、卡片、间距和主要图片区域，再做语义化结构。
 11. 运行 `scripts/qa_screenshot.py` 截源视口和另一端视口。
-12. 写 `qa/compare-report.md`，列出一致点、主要偏差、待用户确认和暂不处理项。
+12. 写 `qa/compare-report.md`，列出一致点、主要偏差、待用户确认和暂不处理项；必须单列裁切遮挡、颜色和源视口几何检查。
 
 ## 资源判断表
 
@@ -71,14 +72,26 @@ imagetohtml-output/
 
 ```text
 区域 | 类型 | 处理方式 | 输出 | 状态
-Hero 背景 | 复杂图片 | 裁切 WebP | assets/images/hero-bg.webp | confirmed
-Logo | 品牌标识 | 裁切 PNG 占位 | assets/logos/logo-temp.png | needs-svg-redraw
+Hero 背景 | 复杂图片 | 裁切 WebP，保留主体和安全留白 | assets/images/hero-bg.webp | confirmed
+Logo | 品牌标识 | 简单可手写 SVG；复杂则裁切 PNG 占位 | assets/logos/logo-full.svg 或 logo-temp.png | confirmed / needs-svg-redraw
 标题 | 文本 | OCR 校对后写入 HTML | text-map.json / index.html | confirmed
 按钮 | UI 组件 | CSS 复刻 | tokens.css / index.html | confirmed
 功能图标 | 图标 | lucide 或 SVG 替换 | assets/icons/ | needs-review
 ```
 
 详细规则见 `references/asset-rules.md` 和 `references/output-contract.md`。
+
+## 源视口几何
+
+开始写 HTML 前，必须记录关键尺寸和布局关系，例如画布、外框、侧栏、顶部栏、Hero、卡片网格、底部区域、主要间距和圆角。
+
+```text
+区域 | 原图位置/尺寸 | HTML 实现策略 | 状态
+App 外框 | x,y,w,h | width/max-width/padding/border-radius | confirmed
+侧栏 | x,y,w,h | fixed/flex-basis | confirmed
+Hero | x,y,w,h | grid/flex + image safe area | confirmed
+卡片网格 | 列数/列宽/间距 | CSS grid tracks/gap | confirmed
+```
 
 ## 字体策略
 
@@ -91,15 +104,16 @@ Logo | 品牌标识 | 裁切 PNG 占位 | assets/logos/logo-temp.png | needs-svg
 ## 颜色策略
 
 - 先保留完整颜色采样/统计证据层：`colors/raw-colors.json` 和 `colors/palette.png`。
-- 再写 `colors/color-map.json`，说明主要颜色来自哪些区域。
+- 再写 `colors/color-map.json`，说明主要颜色来自哪些区域，并记录 token、采样区域、原图颜色、页面用途和状态。
 - `tokens/tokens.css` 可以使用细碎颜色，但不要为了显得系统化而制造大量无意义 token。
 - 重复使用或有语义角色的颜色优先进入 token；一次性局部颜色可以写局部 CSS，并在 `color-map.json` 标来源。
+- 如果为了对比度或可读性微调颜色，必须在 `color-map.json` 标记为 derived，不要把主观调色写成原图取样。
 
 ## 响应式策略
 
 - 先根据原图尺寸、长宽比和 UI 结构判断 `source_viewport`：desktop、mobile、tablet、poster、square 或 `needs-review`。
 - 设备判断不能只看像素宽度；高分辨率导出图、放大截图或设计稿可能超过常见设备宽度，需要结合状态栏、导航形态、内容密度和画面比例判断。
-- 源视口是第一验收对象，必须尽量还原视觉层级、布局和比例。
+- 源视口是第一验收对象，必须按几何记录尽量还原视觉层级、布局和比例；不要把满幅画布误缩成居中的小容器。
 - 另一端只要求：无横向溢出、无重叠、信息顺序合理、视觉风格延续。
 - 除非用户明确要求，不把另一端适配扩展成完整重设计或多断点设计系统。
 
@@ -116,19 +130,28 @@ Logo | 品牌标识 | 裁切 PNG 占位 | assets/logos/logo-temp.png | needs-svg
 - 结论：
 
 ## 一致点
-- 
+-
 
 ## 主要偏差
-- 
+-
+
+## 裁切/遮挡检查
+-
+
+## 颜色核对
+-
+
+## 源视口几何核对
+-
 
 ## 待用户确认
-- 
+-
 
 ## 暂不处理
-- 
+-
 
 ## 另一端检查
-- 
+-
 ```
 
 ## 脚本
