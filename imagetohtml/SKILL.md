@@ -14,7 +14,7 @@ description: Use when Codex needs to convert a single visual mockup image (PNG/J
 - 原图是母图。除非用户明确要求，不重新生成、重画或改写 logo、插画、人物、构图、表情、动作、风格。
 - v1 只处理单张视觉稿图片；多页、多状态、多端完整设计系统不在默认范围内。
 - 文字必须转成 HTML 真文字。OCR 只是初稿，必须人工/模型对照母图校对。
-- Logo 先判断复杂度：简单、清晰、低风险的标识可以手写 SVG；复杂、模糊或品牌识别不确定的标识先裁切占位，并标记是否需要后续人工重绘。
+- Logo 先分类：`simple-mark`（纯几何、扁平、无自定义字标）才可手写 SVG；`brand-lockup`（图形 + wordmark 品牌字标/中文/slogan 组合）默认整块裁切保真。用户明确要求矢量但无法准确临摹时，标记 `needs-vector-redraw`，不要用系统字体近似替代自定义字标后标记 `confirmed`。
 - 图标优先 SVG 化；常见图标优先使用项目已有图标库或 lucide。
 - 图片、复杂插画、复杂纹理用 PNG/WebP 资产；按钮、卡片、边框、圆角、阴影、纯色和简单渐变用 CSS。
 - 复杂插画、产品图和角色资产裁切必须保留主体、阴影、装饰元素和安全留白；贴边、缺角或被容器裁掉时，不得标记为 `confirmed`。
@@ -73,7 +73,7 @@ imagetohtml-output/
 ```text
 区域 | 类型 | 处理方式 | 输出 | 状态
 Hero 背景 | 复杂图片 | 裁切 WebP，保留主体和安全留白 | assets/images/hero-bg.webp | confirmed
-Logo | 品牌标识 | 简单可手写 SVG；复杂则裁切 PNG 占位 | assets/logos/logo-full.svg 或 logo-temp.png | confirmed / needs-svg-redraw
+Logo | 品牌标识 | simple-mark 可 SVG；brand-lockup 整块裁切保真；不确定则待矢量重绘 | assets/logos/logo-full.svg 或 logo-lockup.png | confirmed / needs-vector-redraw
 标题 | 文本 | OCR 校对后写入 HTML | text-map.json / index.html | confirmed
 按钮 | UI 组件 | CSS 复刻 | tokens.css / index.html | confirmed
 功能图标 | 图标 | lucide 或 SVG 替换 | assets/icons/ | needs-review
@@ -136,6 +136,9 @@ Hero | x,y,w,h | grid/flex + image safe area | confirmed
 -
 
 ## 裁切/遮挡检查
+-
+
+## Logo 核对
 -
 
 ## 颜色核对

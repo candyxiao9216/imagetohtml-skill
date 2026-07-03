@@ -8,7 +8,7 @@
 | 复杂插画 | WebP/PNG | 大块裁切，避免强行矢量化 |
 | 简单图标 | SVG | 优先用图标库或手写 SVG |
 | 定制图标 | SVG/PNG | 能重绘才 SVG；不确定先 PNG 占位 |
-| Logo | SVG/PNG | 简单清晰的手写 SVG；复杂或不确定的 PNG 占位 |
+| Logo | SVG/PNG | simple-mark 可手写 SVG；brand-lockup 默认整块裁切保真 |
 | 文字 | HTML 文本 | OCR 后校对 |
 | 按钮、卡片、圆角、阴影 | CSS | 不裁图 |
 | 简单几何和渐变 | CSS | 不裁图 |
@@ -30,18 +30,26 @@
 - 独立插画和产品图在 CSS 中默认使用 `object-fit: contain`，不要用固定容器加 `overflow:hidden` 裁掉主体。
 - 照片缩略图可以使用 `object-fit: cover`，但前提是原图本身就是局部照片或用户可接受头像/缩略图裁切。
 
-## Logo SVG 规则
+## Logo 规则
 
-- 简单、清晰、低风险的 Logo 可以手写 SVG，输出到 `assets/logos/logo-full.svg` 或内联 SVG。
+- `simple-mark` 指纯几何、扁平、无渐变阴影、无自定义字标的简单标识；这类标识可以手写 SVG，输出到 `assets/logos/logo-full.svg` 或内联 SVG。
+- `brand-lockup` 指图形 + wordmark 品牌字标/中文/slogan 的组合标识；默认整块裁切为 PNG/WebP 保真，不拆成“近似图形 + 系统字体文字”。
 - 手写 SVG 只能还原母图里可见的形状、比例和颜色，不得凭想象补全品牌细节。
-- 复杂、模糊、带精细纹理或品牌识别不确定的 Logo 先用 PNG 占位，并在 `asset-manifest.json` 标记 `needs-svg-redraw` 或 `needs-review`。
+- 自定义 wordmark、中文品牌字、slogan 的字重、字距、基线或字体特征无法准确还原时，不得用系统字体替代后标记 `confirmed`。
+- 低分辨率、模糊、带渐变/阴影、带体积感或品牌识别不确定的 Logo 先用整块裁切保真，并在 `asset-manifest.json` 标记 `needs-vector-redraw` 或 `needs-review`。
+- 用户明确要求矢量输出但当前只能近似时，应输出裁切占位 + `needs-vector-redraw`，不要交付会改变品牌识别的“伪矢量版”。
+
+## Logo QA
+
+- 核对整体宽高、图形与字标比例、字重、字距、基线、颜色、slogan 位置和透明/阴影效果。
+- 任何一项明显偏离母图时，Logo 资产不能标记 `confirmed`。
 
 ## 命名
 
 - 图片：`assets/images/<area>-<purpose>.webp`
 - 插画：`assets/illustrations/<subject>.webp`
 - 图标：`assets/icons/<meaning>.svg`
-- Logo：`assets/logos/logo-temp.png`、`assets/logos/logo-full.svg`
+- Logo：`assets/logos/logo-lockup.png`、`assets/logos/logo-temp.png`、`assets/logos/logo-full.svg`
 - 字体：`assets/fonts/<family-name>.<ext>`
 
 ## 状态字段
@@ -51,6 +59,7 @@
 - `confirmed`：可以直接用于 HTML，包括已按母图手写且自检通过的简单 SVG。
 - `needs-review`：内容、边界、用途或质量需要用户确认。
 - `needs-svg-redraw`：当前是位图占位，后续需要人工重绘 SVG。
+- `needs-vector-redraw`：当前保留裁切位图，后续需要人工矢量重绘。
 - `deferred`：v1 暂不处理，但已记录。
 
 ## 禁止事项
@@ -58,5 +67,6 @@
 - 不把整张视觉稿作为页面背景来伪装 HTML。
 - 不把普通文字裁成图片。
 - 不凭想象重绘 Logo。
+- 不把 brand-lockup 拆成近似图形和系统字体后当作完成。
 - 不强行把复杂 AI 插画转成 SVG。
 - 不为了“资产化”把页面切成大量不可维护碎片。

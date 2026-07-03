@@ -2,7 +2,7 @@
 
 ## visual-breakdown.md
 
-必须包含三张表：资源判断表、源视口几何表、关键颜色映射表。
+必须包含四张表：资源判断表、Logo 判断表、源视口几何表、关键颜色映射表。
 
 资源判断表：
 
@@ -11,6 +11,14 @@
 ```
 
 每一行都要能解释为什么这么处理。遇到不确定内容，写 `needs-review`。
+
+Logo 判断表：
+
+```text
+Logo 区域 | 类型(simple-mark/brand-lockup) | 处理方式 | 字标是否自定义 | 状态
+```
+
+`brand-lockup` 默认整块裁切保真。除非能准确临摹母图里的字标、比例、字距和颜色，否则不要拆成 SVG 图形 + 系统字体文字。
 
 源视口几何表：
 
@@ -58,6 +66,21 @@ Token | 原图区域 | 取样颜色 | 页面用途 | 状态
 ```
 
 `bbox` 使用 `[x, y, width, height]`，单位是原图像素。复杂插画、产品图和角色图推荐记录 `crop_padding`、`css_fit` 和边界检查结论。
+
+Logo 资产推荐补充：
+
+```json
+{
+  "id": "logo",
+  "type": "brand-lockup",
+  "path": "assets/logos/logo-lockup.png",
+  "bbox": [0, 0, 240, 96],
+  "method": "crop-png",
+  "usage": "brand logo lockup",
+  "status": "confirmed",
+  "notes": "完整品牌组合整块裁切，避免字标失真"
+}
+```
 
 ## text-map.json
 
@@ -129,6 +152,7 @@ Token | 原图区域 | 取样颜色 | 页面用途 | 状态
 - 哪些点与母图一致。
 - 哪些点存在明显偏差。
 - 裁切资产是否有贴边、缺角、主体被容器裁掉。
+- Logo 是否被正确分类；brand-lockup 是否保持整体比例、字重、字距、基线和 slogan 位置。
 - 关键颜色是否来自原图取样，是否存在明显漂移。
 - 源视口关键几何是否接近原图，包括外框、导航、Hero、卡片网格、间距和圆角。
 - 哪些点需要用户确认。
