@@ -21,6 +21,7 @@ def main() -> None:
     parser.add_argument("output", type=Path)
     parser.add_argument("--width", type=int, required=True)
     parser.add_argument("--height", type=int, required=True)
+    parser.add_argument("--full-page", action="store_true", help="Capture the full page instead of the viewport.")
     args = parser.parse_args()
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -28,7 +29,7 @@ def main() -> None:
         browser = p.chromium.launch()
         page = browser.new_page(viewport={"width": args.width, "height": args.height})
         page.goto(target_url(args.target), wait_until="networkidle")
-        page.screenshot(path=str(args.output), full_page=True)
+        page.screenshot(path=str(args.output), full_page=args.full_page)
         browser.close()
 
     print(str(args.output))

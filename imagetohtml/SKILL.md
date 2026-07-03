@@ -48,6 +48,7 @@ imagetohtml-output/
   qa/
     source-viewport.png
     alternate-viewport.png
+    color-check.json
     compare-report.md
 ```
 
@@ -55,7 +56,7 @@ imagetohtml-output/
 
 1. 复制母图到 `source/original.png`。
 2. 运行 `scripts/inspect_image.py` 获取尺寸、比例、设备推断和基础元信息。
-3. 写 `visual-breakdown.md`，逐区判断每个视觉元素应该裁图、SVG 化、CSS 复刻还是转成真文字，并记录源视口关键几何。
+3. 写 `visual-breakdown.md`，逐区判断每个视觉元素应该裁图、SVG 化、CSS 复刻还是转成真文字，并记录源视口关键几何和关键局部区域。
 4. 做 OCR 初提取，写 `text-map.json`；对照母图校对，不确定内容标 `needs-review`。
 5. 匹配相似开源字体，写 `font-map.json`；必须记录来源、许可证和用途。
 6. 运行 `scripts/sample_colors.py` 生成颜色证据层；完整颜色统计只作为证据，不等于全部进入 CSS token。
@@ -63,8 +64,9 @@ imagetohtml-output/
 8. 写 `asset-manifest.json`，记录每个资产的来源区域、用途、处理方式和待确认项。
 9. 写 `tokens/tokens.css`，包含字体、颜色、字号、间距、圆角、阴影等实际页面会用到的 token；关键颜色必须能追溯到 `colors/color-map.json`。
 10. 写 `index.html` 和必要 CSS。先按源视口几何锁定外框、网格、卡片、间距和主要图片区域，再做语义化结构。
-11. 运行 `scripts/qa_screenshot.py` 截源视口和另一端视口。
-12. 写 `qa/compare-report.md`，列出一致点、主要偏差、待用户确认和暂不处理项；必须单列裁切遮挡、颜色和源视口几何检查。
+11. 运行 `scripts/qa_screenshot.py` 截源视口和另一端视口；源视口截图默认不要加 `--full-page`，尺寸必须等于母图源视口。
+12. 对关键颜色区域运行 `scripts/check_render_colors.py`，输出 `qa/color-check.json`。
+13. 写 `qa/compare-report.md`，列出一致点、主要偏差、待用户确认和暂不处理项；必须单列关键局部区域、裁切遮挡、颜色和源视口几何检查。
 
 ## 资源判断表
 
@@ -91,6 +93,16 @@ App 外框 | x,y,w,h | width/max-width/padding/border-radius | confirmed
 侧栏 | x,y,w,h | fixed/flex-basis | confirmed
 Hero | x,y,w,h | grid/flex + image safe area | confirmed
 卡片网格 | 列数/列宽/间距 | CSS grid tracks/gap | confirmed
+```
+
+## 关键局部区域
+
+对视觉复杂、用户关注或容易失真的局部，必须记录为 `critical-region`。关键局部区域失败时，QA 结论不能写高保真或通过。
+
+```text
+区域 | 原图位置/尺寸 | HTML selector | 关键子元素 | 验收状态
+图片列表卡 | x,y,w,h | .moments-card | 时间/缩略图/主体动作/文案 | confirmed
+插画组合卡 | x,y,w,h | .quote-card | 文案/主体/底座/装饰/内框 | confirmed
 ```
 
 ## 字体策略
@@ -144,6 +156,9 @@ Hero | x,y,w,h | grid/flex + image safe area | confirmed
 ## 颜色核对
 -
 
+## 关键局部区域核对
+-
+
 ## 源视口几何核对
 -
 
@@ -162,6 +177,7 @@ Hero | x,y,w,h | grid/flex + image safe area | confirmed
 - `scripts/inspect_image.py`：读取图片尺寸、比例、模式和源视口推断。
 - `scripts/sample_colors.py`：生成颜色统计 JSON 和色板 PNG。
 - `scripts/crop_asset.py`：按坐标裁切资产并可转 PNG/WebP。
-- `scripts/qa_screenshot.py`：用 Playwright 截取 HTML 页面视口截图。
+- `scripts/qa_screenshot.py`：用 Playwright 截取 HTML 页面视口截图；默认只截视口，需要长图时才使用 `--full-page`。
+- `scripts/check_render_colors.py`：对比母图和最终截图的关键区域均色，生成 `qa/color-check.json`。
 
 脚本是辅助工具。视觉分层、字体选择、资产取舍和 QA 判断必须由 Codex 明确写出依据。
